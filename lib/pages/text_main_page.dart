@@ -3,9 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_debounce/easy_debounce.dart';
 
-import '/data/constants.dart';
 import '/app_state.dart';
-import './subpages/choose_language_page.dart';
 
 class TextMainPage extends StatefulWidget {
   const TextMainPage({super.key});
@@ -24,9 +22,6 @@ class _TextMainPageState extends State<TextMainPage> {
     _firstController.dispose();
     _secondController.dispose();
     _sourceTextController.dispose();
-    // var appState = context.watch<AppState>();
-    // appState.updateSourceText('');
-    // appState.updateTranslatedText('');
     super.dispose();
   }
 
@@ -35,18 +30,11 @@ class _TextMainPageState extends State<TextMainPage> {
     var appState = context.watch<AppState>();
     var languageFrom = appState.languageFrom;
     var languageTo = appState.languageTo;
+    var sourceText = appState.sourceText;
     var translatedText = appState.translatedText;
     var suggestedLanguage = appState.suggestedLanguage;
     var ttsVoiceIdFrom = appState.ttsVoiceIdFrom;
     var ttsVoiceIdTo = appState.ttsVoiceIdTo;
-
-    var disableSwapButton = languageFrom == detectLanguage;
-    IconData swapIcon;
-    if (disableSwapButton) {
-      swapIcon = Icons.arrow_right_alt;
-    } else {
-      swapIcon = Icons.swap_horiz;
-    }
 
     IconData speakerIcon = Icons.volume_up;
     IconData copyIcon = Icons.copy;
@@ -58,6 +46,8 @@ class _TextMainPageState extends State<TextMainPage> {
       }
       return translatedText;
     }
+
+    _sourceTextController.text = sourceText;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -73,30 +63,29 @@ class _TextMainPageState extends State<TextMainPage> {
                   Row(
                     children: [
                       IconButton(
-                        onPressed: (_sourceTextController.text.isEmpty ||
-                                ttsVoiceIdFrom == null)
-                            ? null
-                            : () {
-                                appState.playSourceTextSpeech();
-                              },
+                        onPressed:
+                            (sourceText.isEmpty || ttsVoiceIdFrom == null)
+                                ? null
+                                : () {
+                                    appState.playSourceTextSpeech();
+                                  },
                         icon: Icon(speakerIcon),
                         tooltip: 'Listen',
                       ),
                       IconButton(
-                        onPressed: _sourceTextController.text.isEmpty
+                        onPressed: sourceText.isEmpty
                             ? null
                             : () async {
-                                await Clipboard.setData(ClipboardData(
-                                    text: _sourceTextController.text));
+                                await Clipboard.setData(
+                                    ClipboardData(text: sourceText));
                               },
                         icon: Icon(copyIcon),
                         tooltip: 'Copy',
                       ),
                       IconButton(
-                        onPressed: _sourceTextController.text.isEmpty
+                        onPressed: sourceText.isEmpty
                             ? null
                             : () {
-                                _sourceTextController.clear();
                                 appState.updateSourceText('');
                                 appState.triggerTranslation();
                               },
@@ -129,9 +118,9 @@ class _TextMainPageState extends State<TextMainPage> {
                         FocusManager.instance.primaryFocus?.unfocus();
                       },
                       onChanged: (text) {
+                        appState.updateSourceText(text);
                         EasyDebounce.debounce('sourceTextDebouncer',
                             const Duration(milliseconds: 600), () {
-                          appState.updateSourceText(text);
                           appState.triggerTranslation();
                         });
                       },
@@ -235,81 +224,8 @@ class _TextMainPageState extends State<TextMainPage> {
               ),
             ],
           ),
-          Positioned(
-            bottom: 0,
-            width: MediaQuery.of(context).size.width,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          navigateToChooseLanguagePage(
-                              context, ChooseLanguagePageType.translateFrom);
-                        },
-                        style: ButtonStyle(
-                            padding: const MaterialStatePropertyAll(
-                                EdgeInsets.all(10)),
-                            shape: MaterialStatePropertyAll(
-                                RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)))),
-                        child: Text(
-                          languageFrom.name,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: !disableSwapButton
-                          ? () {
-                              appState.swapLanguageFromAndTo();
-                              _sourceTextController.text = translatedText;
-                              appState
-                                  .updateSourceText(_sourceTextController.text);
-                              appState.triggerTranslation();
-                            }
-                          : null,
-                      icon: Icon(swapIcon),
-                      tooltip: 'Swap',
-                    ),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          navigateToChooseLanguagePage(
-                              context, ChooseLanguagePageType.translateTo);
-                        },
-                        style: ButtonStyle(
-                            padding: const MaterialStatePropertyAll(
-                                EdgeInsets.all(10)),
-                            shape: MaterialStatePropertyAll(
-                                RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)))),
-                        child: Text(
-                          languageTo.name,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
         ],
       ),
-    );
-  }
-
-  void navigateToChooseLanguagePage(
-      BuildContext context, ChooseLanguagePageType pageType) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-          builder: (context) => ChooseLanguagePage(pageType: pageType)),
     );
   }
 }

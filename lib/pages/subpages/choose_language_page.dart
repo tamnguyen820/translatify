@@ -7,10 +7,14 @@ import '../../app_state.dart';
 
 enum ChooseLanguagePageType { translateFrom, translateTo }
 
+enum ParentPage { text, image }
+
 class ChooseLanguagePage extends StatefulWidget {
   final ChooseLanguagePageType pageType;
+  final ParentPage parentPage;
 
-  const ChooseLanguagePage({Key? key, required this.pageType})
+  const ChooseLanguagePage(
+      {Key? key, required this.pageType, required this.parentPage})
       : super(key: key);
 
   @override
@@ -41,20 +45,24 @@ class ChooseLanguagePageState extends State<ChooseLanguagePage> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<AppState>();
-    var languageFrom = appState.languageFrom;
-    var languageTo = appState.languageTo;
 
     String pageTitle;
     SupportedLanguage selectedLanguage;
     switch (widget.pageType) {
       case ChooseLanguagePageType.translateFrom:
         pageTitle = 'Translate From';
-        selectedLanguage = languageFrom;
+        selectedLanguage = (widget.parentPage == ParentPage.text)
+            ? appState.languageFrom
+            : appState.imageLanguageFrom;
         break;
       case ChooseLanguagePageType.translateTo:
         pageTitle = 'Translate To';
-        selectedLanguage = languageTo;
+        selectedLanguage = (widget.parentPage == ParentPage.text)
+            ? appState.languageTo
+            : appState.imageLanguageTo;
         break;
+      default:
+        throw Exception('Unhandled page type: ${widget.pageType}');
     }
 
     return Scaffold(
@@ -88,7 +96,7 @@ class ChooseLanguagePageState extends State<ChooseLanguagePage> {
             ListTile(
               leading: const Icon(Icons.check_circle),
               title: Text(
-                'Selected: ${widget.pageType == ChooseLanguagePageType.translateFrom ? appState.languageFrom.name : appState.languageTo.name}',
+                'Selected: ${selectedLanguage.name}',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.blue,
@@ -124,12 +132,20 @@ class ChooseLanguagePageState extends State<ChooseLanguagePage> {
                         onTap: () {
                           switch (widget.pageType) {
                             case ChooseLanguagePageType.translateFrom:
-                              appState.changeLanguageFrom(language);
-                              appState.triggerTranslation();
+                              if (widget.parentPage == ParentPage.text) {
+                                appState.changeLanguageFrom(language);
+                                appState.triggerTranslation();
+                              } else {
+                                appState.changeImageLanguageFrom(language);
+                              }
                               break;
                             case ChooseLanguagePageType.translateTo:
-                              appState.changeLanguageTo(language);
-                              appState.triggerTranslation();
+                              if (widget.parentPage == ParentPage.text) {
+                                appState.changeLanguageTo(language);
+                                appState.triggerTranslation();
+                              } else {
+                                appState.changeImageLanguageTo(language);
+                              }
                               break;
                           }
                           Navigator.pop(context);

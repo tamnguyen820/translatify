@@ -20,6 +20,7 @@ class AppState extends ChangeNotifier {
     region: dotenv.env['AWS_REGION'] as String,
   );
 
+  // Text main page
   SupportedLanguage languageFrom = englishLanguage;
   SupportedLanguage languageTo = frenchLanguage;
   SupportedLanguage? suggestedLanguage;
@@ -31,10 +32,12 @@ class AppState extends ChangeNotifier {
   PreviousTTSInfo? prevTTSToInfo;
 
   AppState() {
-    initializeTtsVoiceIds();
+    _initializeTtsVoiceIds();
   }
 
-  Future<void> initializeTtsVoiceIds() async {
+  // Text page functions
+
+  Future<void> _initializeTtsVoiceIds() async {
     ttsVoiceIdFrom = await getVoiceId(languageFrom);
     ttsVoiceIdTo = await getVoiceId(languageTo);
     notifyListeners();
@@ -179,6 +182,29 @@ class AppState extends ChangeNotifier {
       prevTTSInfo: prevTTSToInfo,
       sourceText: translatedText,
     );
+  }
+
+  // Image main page
+  SupportedLanguage imageLanguageFrom = englishLanguage;
+  SupportedLanguage imageLanguageTo = frenchLanguage;
+  SupportedLanguage? imageSuggestedLanguage;
+
+  // Image page functions
+  void changeImageLanguageFrom(SupportedLanguage target) async {
+    imageLanguageFrom = target;
+    notifyListeners();
+  }
+
+  void changeImageLanguageTo(SupportedLanguage target) async {
+    imageLanguageTo = target;
+    notifyListeners();
+  }
+
+  void swapImageLanguageFromAndTo() {
+    var tempLang = imageLanguageFrom;
+    imageLanguageFrom = imageLanguageTo;
+    imageLanguageTo = tempLang;
+    notifyListeners();
   }
 
   ///////////////////
