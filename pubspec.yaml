@@ -1,0 +1,38 @@
+name: translatify
+description: "A translation app project."
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 0.0.1+1
+
+environment:
+  sdk: '>=3.2.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  english_words: ^4.0.0
+  provider: ^6.0.0
+  
+  cupertino_icons: ^1.0.2
+  easy_debounce: ^2.0.3
+  flutter_dotenv: ^5.1.0
+  translator: ^0.1.7
+  audioplayers: ^5.2.1
+  aws_translate_api: ^2.0.0
+  aws_polly_api: ^2.0.0
+  camera: ^0.10.5+7
+  path_provider: ^2.1.1
+  path: ^1.8.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
