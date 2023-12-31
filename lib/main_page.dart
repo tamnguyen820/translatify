@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
+import 'package:provider/provider.dart';
 
+import 'app_state.dart';
+import 'data/constants.dart';
 import 'pages/text_main_page.dart';
 import 'pages/image_main_page.dart';
+import 'pages/subpages/choose_language_page.dart';
 
 class MyHomePage extends StatefulWidget {
-  final CameraDescription camera;
-  const MyHomePage({super.key, required this.camera});
+  const MyHomePage({super.key});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -19,6 +21,18 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     colorScheme = Theme.of(context).colorScheme;
+    var appState = context.watch<AppState>();
+    var languageFrom = appState.languageFrom;
+    var languageTo = appState.languageTo;
+    var translatedText = appState.translatedText;
+
+    var disableSwapButton = languageFrom == detectLanguage;
+    IconData swapIcon;
+    if (disableSwapButton) {
+      swapIcon = Icons.arrow_right_alt;
+    } else {
+      swapIcon = Icons.swap_horiz;
+    }
 
     Widget page;
     switch (selectedIndex) {
@@ -26,9 +40,7 @@ class _MyHomePageState extends State<MyHomePage> {
         page = const TextMainPage();
         break;
       case 1:
-        page = ImageMainPage(
-          camera: widget.camera,
-        );
+        page = const ImageMainPage();
         break;
       default:
         throw UnimplementedError('No widget for $selectedIndex!');
@@ -46,14 +58,74 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: _buildAppBar(),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          if (constraints.maxWidth < 450) {
-            return _buildMobileLayout(mainArea);
-          } else {
-            return _buildWideLayout(mainArea, constraints);
-          }
+          return _buildBody(mainArea);
         },
       ),
+      bottomNavigationBar: _buildBottomNav(appState.clearStateWhenNavigate),
       resizeToAvoidBottomInset: false,
+      floatingActionButtonLocation:
+          FloatingActionButtonLocation.miniCenterFloat,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: FloatingActionButton(
+                mini: true,
+                onPressed: () {
+                  navigateToChooseLanguagePage(
+                    context,
+                    ChooseLanguagePageType.translateFrom,
+                    [ParentPage.text, ParentPage.image][selectedIndex],
+                  );
+                },
+                tooltip: 'Pick source language',
+                child: Text(
+                  languageFrom.name,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: !disableSwapButton
+                  ? () {
+                      appState.swapLanguageFromAndTo();
+                      if (selectedIndex == 0) {
+                        appState.swapVoiceId();
+                        appState.swapPrevTTSInfo();
+                        appState.updateSourceText(translatedText);
+                        appState.triggerTranslation();
+                      }
+                      if (selectedIndex == 1) {
+                        // appState.updateSourceText(translatedText);
+                        // appState.triggerTranslation();
+                      }
+                    }
+                  : null,
+              icon: Icon(swapIcon),
+              tooltip: 'Swap',
+            ),
+            Expanded(
+              child: FloatingActionButton(
+                mini: true,
+                onPressed: () {
+                  navigateToChooseLanguagePage(
+                    context,
+                    ChooseLanguagePageType.translateTo,
+                    [ParentPage.text, ParentPage.image][selectedIndex],
+                  );
+                },
+                tooltip: 'Pick target language',
+                child: Text(
+                  languageTo.name,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -69,62 +141,53 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _buildMobileLayout(Widget mainArea) {
+  Widget _buildBody(Widget mainArea) {
     return Column(
       children: [
         Expanded(child: mainArea),
-        SafeArea(
-          child: BottomNavigationBar(
-            showUnselectedLabels: false,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.description),
-                label: 'Text',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.camera_enhance),
-                label: 'Image',
-              ),
-            ],
-            // backgroundColor: colorScheme.secondary,
-            currentIndex: selectedIndex,
-            onTap: (value) {
-              setState(() {
-                selectedIndex = value;
-              });
-            },
-          ),
-        ),
       ],
     );
   }
 
-  Widget _buildWideLayout(Widget mainArea, BoxConstraints constraints) {
-    return Row(
-      children: [
-        SafeArea(
-          child: NavigationRail(
-            extended: constraints.maxWidth >= 600,
-            destinations: const [
-              NavigationRailDestination(
-                icon: Icon(Icons.description),
-                label: Text('Text'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.camera_enhance),
-                label: Text('Image'),
-              ),
-            ],
-            selectedIndex: selectedIndex,
-            onDestinationSelected: (value) {
-              setState(() {
-                selectedIndex = value;
-              });
-            },
+  Widget _buildBottomNav(Function onNavChange) {
+    return SafeArea(
+      child: BottomNavigationBar(
+        showUnselectedLabels: false,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.description),
+            label: 'Text',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.camera_enhance),
+            label: 'Image',
+          ),
+        ],
+        // backgroundColor: colorScheme.secondary,
+        currentIndex: selectedIndex,
+        onTap: (value) {
+          setState(() {
+            selectedIndex = value;
+          });
+          onNavChange();
+        },
+      ),
+    );
+  }
+
+  void navigateToChooseLanguagePage(
+    BuildContext context,
+    ChooseLanguagePageType pageType,
+    ParentPage parentPage,
+  ) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChooseLanguagePage(
+          pageType: pageType,
+          parentPage: parentPage,
         ),
-        Expanded(child: mainArea),
-      ],
+      ),
     );
   }
 }

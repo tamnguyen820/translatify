@@ -7,10 +7,14 @@ import '../../app_state.dart';
 
 enum ChooseLanguagePageType { translateFrom, translateTo }
 
+enum ParentPage { text, image }
+
 class ChooseLanguagePage extends StatefulWidget {
   final ChooseLanguagePageType pageType;
+  final ParentPage parentPage;
 
-  const ChooseLanguagePage({Key? key, required this.pageType})
+  const ChooseLanguagePage(
+      {Key? key, required this.pageType, required this.parentPage})
       : super(key: key);
 
   @override
@@ -55,6 +59,8 @@ class ChooseLanguagePageState extends State<ChooseLanguagePage> {
         pageTitle = 'Translate To';
         selectedLanguage = languageTo;
         break;
+      default:
+        throw Exception('Unhandled page type: ${widget.pageType}');
     }
 
     return Scaffold(
@@ -88,7 +94,7 @@ class ChooseLanguagePageState extends State<ChooseLanguagePage> {
             ListTile(
               leading: const Icon(Icons.check_circle),
               title: Text(
-                'Selected: ${widget.pageType == ChooseLanguagePageType.translateFrom ? appState.languageFrom.name : appState.languageTo.name}',
+                'Selected: ${selectedLanguage.name}',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.blue,
@@ -125,11 +131,19 @@ class ChooseLanguagePageState extends State<ChooseLanguagePage> {
                           switch (widget.pageType) {
                             case ChooseLanguagePageType.translateFrom:
                               appState.changeLanguageFrom(language);
-                              appState.triggerTranslation();
+                              if (widget.parentPage == ParentPage.text) {
+                                appState.triggerTranslation();
+                              } else {
+                                // Trigger what?
+                              }
                               break;
                             case ChooseLanguagePageType.translateTo:
                               appState.changeLanguageTo(language);
-                              appState.triggerTranslation();
+                              if (widget.parentPage == ParentPage.text) {
+                                appState.triggerTranslation();
+                              } else {
+                                // Trigger what?
+                              }
                               break;
                           }
                           Navigator.pop(context);
