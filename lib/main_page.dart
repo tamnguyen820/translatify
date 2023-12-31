@@ -61,7 +61,7 @@ class _MyHomePageState extends State<MyHomePage> {
           return _buildBody(mainArea);
         },
       ),
-      bottomNavigationBar: _buildBottomNav(appState.clearStateWhenNavigate),
+      bottomNavigationBar: _buildBottomNav(appState),
       resizeToAvoidBottomInset: false,
       floatingActionButtonLocation:
           FloatingActionButtonLocation.miniCenterFloat,
@@ -149,7 +149,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _buildBottomNav(Function onNavChange) {
+  Widget _buildBottomNav(AppState appState) {
     return SafeArea(
       child: BottomNavigationBar(
         showUnselectedLabels: false,
@@ -169,7 +169,11 @@ class _MyHomePageState extends State<MyHomePage> {
           setState(() {
             selectedIndex = value;
           });
-          onNavChange();
+          appState.clearStateWhenNavigate();
+          if (value == 0) {
+            // Text main page
+            appState.initializeTtsVoiceIds();
+          }
         },
       ),
     );

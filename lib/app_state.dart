@@ -31,7 +31,7 @@ class AppState extends ChangeNotifier {
   PreviousTTSInfo? prevTTSToInfo;
 
   AppState() {
-    _initializeTtsVoiceIds();
+    initializeTtsVoiceIds();
   }
 
   void clearStateWhenNavigate() {
@@ -46,7 +46,7 @@ class AppState extends ChangeNotifier {
 
   // Text page functions
 
-  Future<void> _initializeTtsVoiceIds() async {
+  Future<void> initializeTtsVoiceIds() async {
     ttsVoiceIdFrom = await getVoiceId(languageFrom);
     ttsVoiceIdTo = await getVoiceId(languageTo);
     notifyListeners();
