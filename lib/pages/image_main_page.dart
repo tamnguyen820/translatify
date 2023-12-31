@@ -20,7 +20,10 @@ class _ImageMainPageState extends State<ImageMainPage> {
 
   Future<void> _onImageButtonPressed(ImageSource source) async {
     try {
-      final XFile? pickedFile = await _picker.pickImage(source: source);
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        preferredCameraDevice: CameraDevice.rear,
+      );
       setState(() {
         if (pickedFile != null) _setImageFileListFromFile(pickedFile);
         _pickImageError = null;
