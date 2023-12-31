@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:english_words/english_words.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:aws_polly_api/polly-2016-06-10.dart';
 import 'package:translatify/services/tts_service.dart';
@@ -35,6 +34,16 @@ class AppState extends ChangeNotifier {
     _initializeTtsVoiceIds();
   }
 
+  void clearStateWhenNavigate() {
+    suggestedLanguage = null;
+    sourceText = '';
+    translatedText = '';
+    ttsVoiceIdFrom = null;
+    ttsVoiceIdTo = null;
+    prevTTSFromInfo = null;
+    prevTTSToInfo = null;
+  }
+
   // Text page functions
 
   Future<void> _initializeTtsVoiceIds() async {
@@ -64,13 +73,20 @@ class AppState extends ChangeNotifier {
 
   void swapLanguageFromAndTo() {
     // Can only swap local variable
-    // Need to swap language, voiceId, and prevTTSInfo
     var tempLang = languageFrom;
     languageFrom = languageTo;
     languageTo = tempLang;
+    notifyListeners();
+  }
+
+  void swapVoiceId() {
     var tempVoiceId = ttsVoiceIdFrom;
     ttsVoiceIdFrom = ttsVoiceIdTo;
     ttsVoiceIdTo = tempVoiceId;
+    notifyListeners();
+  }
+
+  void swapPrevTTSInfo() {
     var tempPrevTTSInfo = prevTTSFromInfo;
     prevTTSFromInfo = prevTTSToInfo;
     prevTTSToInfo = tempPrevTTSInfo;
@@ -127,6 +143,8 @@ class AppState extends ChangeNotifier {
     if (suggestedLanguage != null && suggestedLanguage == languageTo) {
       changeSuggestedLanguage(null);
       swapLanguageFromAndTo();
+      swapVoiceId();
+      swapPrevTTSInfo();
       return;
     }
     changeLanguageFrom(suggestedLanguage!);
@@ -183,59 +201,4 @@ class AppState extends ChangeNotifier {
       sourceText: translatedText,
     );
   }
-
-  // Image main page
-  SupportedLanguage imageLanguageFrom = englishLanguage;
-  SupportedLanguage imageLanguageTo = frenchLanguage;
-  SupportedLanguage? imageSuggestedLanguage;
-
-  // Image page functions
-  void changeImageLanguageFrom(SupportedLanguage target) async {
-    imageLanguageFrom = target;
-    notifyListeners();
-  }
-
-  void changeImageLanguageTo(SupportedLanguage target) async {
-    imageLanguageTo = target;
-    notifyListeners();
-  }
-
-  void swapImageLanguageFromAndTo() {
-    var tempLang = imageLanguageFrom;
-    imageLanguageFrom = imageLanguageTo;
-    imageLanguageTo = tempLang;
-    notifyListeners();
-  }
-
-  ///////////////////
-  var current = WordPair.random();
-  var history = <WordPair>[];
-
-  GlobalKey? historyListKey;
-
-  void getNext() {
-    history.insert(0, current);
-    var animatedList = historyListKey?.currentState as AnimatedListState?;
-    animatedList?.insertItem(0);
-    current = WordPair.random();
-    notifyListeners();
-  }
-
-  var favorites = <WordPair>[];
-
-  void toggleFavorite([WordPair? pair]) {
-    pair = pair ?? current;
-    if (favorites.contains(pair)) {
-      favorites.remove(pair);
-    } else {
-      favorites.add(pair);
-    }
-    notifyListeners();
-  }
-
-  void removeFavorite(WordPair pair) {
-    favorites.remove(pair);
-    notifyListeners();
-  }
-  ///////////////////
 }

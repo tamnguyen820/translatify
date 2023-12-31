@@ -26,9 +26,6 @@ class _MyHomePageState extends State<MyHomePage> {
     var languageTo = appState.languageTo;
     var translatedText = appState.translatedText;
 
-    var imageLanguageFrom = appState.imageLanguageFrom;
-    var imageLanguageTo = appState.imageLanguageTo;
-
     var disableSwapButton = languageFrom == detectLanguage;
     IconData swapIcon;
     if (disableSwapButton) {
@@ -64,7 +61,7 @@ class _MyHomePageState extends State<MyHomePage> {
           return _buildBody(mainArea);
         },
       ),
-      bottomNavigationBar: _buildBottomNav(),
+      bottomNavigationBar: _buildBottomNav(appState.clearStateWhenNavigate),
       resizeToAvoidBottomInset: false,
       floatingActionButtonLocation:
           FloatingActionButtonLocation.miniCenterFloat,
@@ -85,7 +82,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
                 tooltip: 'Pick source language',
                 child: Text(
-                  [languageFrom, imageLanguageFrom][selectedIndex].name,
+                  languageFrom.name,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -93,13 +90,14 @@ class _MyHomePageState extends State<MyHomePage> {
             IconButton(
               onPressed: !disableSwapButton
                   ? () {
+                      appState.swapLanguageFromAndTo();
                       if (selectedIndex == 0) {
-                        appState.swapLanguageFromAndTo();
+                        appState.swapVoiceId();
+                        appState.swapPrevTTSInfo();
                         appState.updateSourceText(translatedText);
                         appState.triggerTranslation();
                       }
                       if (selectedIndex == 1) {
-                        appState.swapImageLanguageFromAndTo();
                         // appState.updateSourceText(translatedText);
                         // appState.triggerTranslation();
                       }
@@ -120,7 +118,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
                 tooltip: 'Pick target language',
                 child: Text(
-                  [languageTo, imageLanguageTo][selectedIndex].name,
+                  languageTo.name,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -151,7 +149,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav(Function onNavChange) {
     return SafeArea(
       child: BottomNavigationBar(
         showUnselectedLabels: false,
@@ -171,6 +169,7 @@ class _MyHomePageState extends State<MyHomePage> {
           setState(() {
             selectedIndex = value;
           });
+          onNavChange();
         },
       ),
     );
@@ -184,10 +183,11 @@ class _MyHomePageState extends State<MyHomePage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-          builder: (context) => ChooseLanguagePage(
-                pageType: pageType,
-                parentPage: parentPage,
-              )),
+        builder: (context) => ChooseLanguagePage(
+          pageType: pageType,
+          parentPage: parentPage,
+        ),
+      ),
     );
   }
 }

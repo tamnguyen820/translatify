@@ -45,21 +45,19 @@ class ChooseLanguagePageState extends State<ChooseLanguagePage> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<AppState>();
+    var languageFrom = appState.languageFrom;
+    var languageTo = appState.languageTo;
 
     String pageTitle;
     SupportedLanguage selectedLanguage;
     switch (widget.pageType) {
       case ChooseLanguagePageType.translateFrom:
         pageTitle = 'Translate From';
-        selectedLanguage = (widget.parentPage == ParentPage.text)
-            ? appState.languageFrom
-            : appState.imageLanguageFrom;
+        selectedLanguage = languageFrom;
         break;
       case ChooseLanguagePageType.translateTo:
         pageTitle = 'Translate To';
-        selectedLanguage = (widget.parentPage == ParentPage.text)
-            ? appState.languageTo
-            : appState.imageLanguageTo;
+        selectedLanguage = languageTo;
         break;
       default:
         throw Exception('Unhandled page type: ${widget.pageType}');
@@ -132,19 +130,19 @@ class ChooseLanguagePageState extends State<ChooseLanguagePage> {
                         onTap: () {
                           switch (widget.pageType) {
                             case ChooseLanguagePageType.translateFrom:
+                              appState.changeLanguageFrom(language);
                               if (widget.parentPage == ParentPage.text) {
-                                appState.changeLanguageFrom(language);
                                 appState.triggerTranslation();
                               } else {
-                                appState.changeImageLanguageFrom(language);
+                                // Trigger what?
                               }
                               break;
                             case ChooseLanguagePageType.translateTo:
+                              appState.changeLanguageTo(language);
                               if (widget.parentPage == ParentPage.text) {
-                                appState.changeLanguageTo(language);
                                 appState.triggerTranslation();
                               } else {
-                                appState.changeImageLanguageTo(language);
+                                // Trigger what?
                               }
                               break;
                           }
