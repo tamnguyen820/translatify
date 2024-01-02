@@ -1,22 +1,30 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:aws_polly_api/polly-2016-06-10.dart';
-import 'package:translatify/services/tts_service.dart';
+import 'package:aws_rekognition_api/rekognition-2016-06-27.dart';
 
 import '/data/models.dart';
 import '/data/constants.dart';
 import '/services/translate_service.dart';
+import '/services/tts_service.dart';
+import '/services/image_service.dart';
 
 class AppState extends ChangeNotifier {
-  final translateService = TranslateService(
+  final _translateService = TranslateService(
     accessKey: dotenv.env['AWS_ACCESS_KEY'] as String,
     secretKey: dotenv.env['AWS_SECRET_KEY'] as String,
     region: dotenv.env['AWS_REGION'] as String,
   );
-  final ttsService = TTSService(
+  final _ttsService = TTSService(
     accessKey: dotenv.env['AWS_ACCESS_KEY'] as String,
     secretKey: dotenv.env['AWS_SECRET_KEY'] as String,
     region: dotenv.env['AWS_REGION'] as String,
+  );
+  final _imageService = ImageService(
+    accessKey: dotenv.env['AWS_ACCESS_KEY'] as String,
+    secretKey: dotenv.env['AWS_SECRET_KEY'] as String,
+    region: dotenv.env['AWS_REGION_IMAGE_DETECTION'] as String,
   );
 
   // Text main page
@@ -117,7 +125,7 @@ class AppState extends ChangeNotifier {
     }
     updateTranslatedText(tempTranslatedText);
 
-    String result = await translateService.translateText(
+    String result = await _translateService.translateText(
       sourceLanguageCode: languageFrom.code,
       targetLanguageCode: languageTo.code,
       text: sourceText,
@@ -125,7 +133,7 @@ class AppState extends ChangeNotifier {
     updateTranslatedText(result);
     notifyListeners();
     try {
-      SupportedLanguage suggestion = await translateService.freeDetectLanguage(
+      SupportedLanguage suggestion = await _translateService.freeDetectLanguage(
         targetLanguageCode: languageTo.code,
         text: sourceText,
       );
@@ -154,7 +162,7 @@ class AppState extends ChangeNotifier {
 
   Future<VoiceId?> getVoiceId(SupportedLanguage language) async {
     if (language.ttsCode != null) {
-      return await ttsService.getVoiceId(language.ttsCode as LanguageCode);
+      return await _ttsService.getVoiceId(language.ttsCode as LanguageCode);
     }
     return null;
   }
@@ -168,11 +176,11 @@ class AppState extends ChangeNotifier {
 
     if (prevTTSInfo != null &&
         prevTTSInfo.sameInfo(languageFrom, sourceText, ttsVoiceId)) {
-      ttsService.playSpeech(prevTTSInfo.audioStream);
+      _ttsService.playSpeech(prevTTSInfo.audioStream);
       return;
     }
 
-    final audioStream = await ttsService.createSpeech(sourceText, ttsVoiceId);
+    final audioStream = await _ttsService.createSpeech(sourceText, ttsVoiceId);
     if (prevTTSInfo != null) {
       prevTTSInfo.updateInfo(languageFrom, sourceText, ttsVoiceId, audioStream);
     } else {
@@ -183,7 +191,7 @@ class AppState extends ChangeNotifier {
         audioStream: audioStream,
       );
     }
-    ttsService.playSpeech(audioStream);
+    _ttsService.playSpeech(audioStream);
   }
 
   void playSourceTextSpeech() async {
@@ -200,5 +208,33 @@ class AppState extends ChangeNotifier {
       prevTTSInfo: prevTTSToInfo,
       sourceText: translatedText,
     );
+  }
+
+  Future<List<TextDetection>?> detectTextInImage(Uint8List bytes) async {
+    final textDetectionList = await _imageService.detectText(bytes);
+    // Only concern about lines, not individual words in those lines
+    textDetectionList!.removeWhere((item) => item.type == TextTypes.word);
+    return textDetectionList;
+  }
+
+  Future<List<TextDetection>> translateImageDetections(
+      List<TextDetection> textDetectionList, String concatSourceText) async {
+    String result = await _translateService.translateText(
+      sourceLanguageCode: languageFrom.code,
+      targetLanguageCode: languageTo.code,
+      text: concatSourceText,
+    );
+    List<String> resultLines = result.split('\n');
+    List<TextDetection> newList = [];
+    // Deep copy is not easy, and detectedText is a final field
+    for (int i = 0; i < textDetectionList.length; i++) {
+      var detectionItem = textDetectionList[i];
+      newList.add(TextDetection(
+        confidence: detectionItem.confidence,
+        detectedText: resultLines[i],
+        geometry: detectionItem.geometry,
+      ));
+    }
+    return newList;
   }
 }

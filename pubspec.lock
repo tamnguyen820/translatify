@@ -73,6 +73,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  aws_rekognition_api:
+    dependency: "direct main"
+    description:
+      name: aws_rekognition_api
+      sha256: bb50d747ec4221a22bb5b38f37e17dc4c47f59447791c760c8cd12e84e55166d
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
   aws_translate_api:
     dependency: "direct main"
     description:
