@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '/data/models.dart';
 import '/data/constants.dart';
-import '../../app_state.dart';
+import '/app_state.dart';
 
 enum ChooseLanguagePageType { translateFrom, translateTo }
 
@@ -13,9 +13,11 @@ class ChooseLanguagePage extends StatefulWidget {
   final ChooseLanguagePageType pageType;
   final ParentPage parentPage;
 
-  const ChooseLanguagePage(
-      {Key? key, required this.pageType, required this.parentPage})
-      : super(key: key);
+  const ChooseLanguagePage({
+    Key? key,
+    required this.pageType,
+    required this.parentPage,
+  }) : super(key: key);
 
   @override
   ChooseLanguagePageState createState() => ChooseLanguagePageState();
@@ -23,9 +25,9 @@ class ChooseLanguagePage extends StatefulWidget {
 
 class ChooseLanguagePageState extends State<ChooseLanguagePage> {
   late List<SupportedLanguage> filteredLanguages;
-  List<SupportedLanguage> allLanguages = List.from(supportedLanguages);
+  final List<SupportedLanguage> allLanguages = [...supportedLanguages];
 
-  final ScrollController _firstController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -38,7 +40,7 @@ class ChooseLanguagePageState extends State<ChooseLanguagePage> {
 
   @override
   void dispose() {
-    _firstController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -60,7 +62,7 @@ class ChooseLanguagePageState extends State<ChooseLanguagePage> {
         selectedLanguage = languageTo;
         break;
       default:
-        throw Exception('Unhandled page type: ${widget.pageType}');
+        throw ArgumentError('Unhandled page type: ${widget.pageType}');
     }
 
     return Scaffold(
@@ -77,7 +79,6 @@ class ChooseLanguagePageState extends State<ChooseLanguagePage> {
               child: TextField(
                 onChanged: (query) {
                   setState(() {
-                    // Update filteredLanguages based on the search query
                     filteredLanguages = allLanguages
                         .where((language) => language.name
                             .toLowerCase()
@@ -103,7 +104,7 @@ class ChooseLanguagePageState extends State<ChooseLanguagePage> {
             ),
             Expanded(
               child: Scrollbar(
-                controller: _firstController,
+                controller: _scrollController,
                 child: ListView.builder(
                   itemCount: filteredLanguages.length,
                   itemBuilder: (context, index) {
@@ -131,20 +132,15 @@ class ChooseLanguagePageState extends State<ChooseLanguagePage> {
                           switch (widget.pageType) {
                             case ChooseLanguagePageType.translateFrom:
                               appState.changeLanguageFrom(language);
-                              if (widget.parentPage == ParentPage.text) {
-                                appState.triggerTranslation();
-                              } else {
-                                appState.translateImageDetections();
-                              }
                               break;
                             case ChooseLanguagePageType.translateTo:
                               appState.changeLanguageTo(language);
-                              if (widget.parentPage == ParentPage.text) {
-                                appState.triggerTranslation();
-                              } else {
-                                appState.translateImageDetections();
-                              }
                               break;
+                          }
+                          if (widget.parentPage == ParentPage.text) {
+                            appState.triggerTranslation();
+                          } else {
+                            appState.translateImageDetections();
                           }
                           Navigator.pop(context);
                         },

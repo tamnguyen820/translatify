@@ -35,7 +35,6 @@ class _ImageMainPageState extends State<ImageMainPage> {
         appState.updateFlexTextDetections(null);
       });
       if (pickedFile == null) return;
-
       // Converts image to bytes
       var imageBytes = await _convertImageToBytes(pickedFile);
       // Set image file and image bytes
@@ -64,9 +63,11 @@ class _ImageMainPageState extends State<ImageMainPage> {
         _pickImageError = e;
       });
     }
-    imageInBytes = null;
-    appState.updateFlexTextDetections(null);
-    _translationLoaded.value = false;
+    setState(() {
+      imageInBytes = null;
+      appState.updateFlexTextDetections(null);
+      _translationLoaded.value = false;
+    });
   }
 
   Future<Uint8List?> _convertImageToBytes(XFile image) async {

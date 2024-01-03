@@ -47,7 +47,9 @@ class _TextMainPageState extends State<TextMainPage> {
       return translatedText;
     }
 
-    _sourceTextController.text = sourceText;
+    if (_sourceTextController.text != sourceText) {
+      _sourceTextController.text = sourceText;
+    }
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -118,9 +120,9 @@ class _TextMainPageState extends State<TextMainPage> {
                         FocusManager.instance.primaryFocus?.unfocus();
                       },
                       onChanged: (text) {
-                        appState.updateSourceText(text);
                         EasyDebounce.debounce('sourceTextDebouncer',
                             const Duration(milliseconds: 600), () {
+                          appState.updateSourceText(text);
                           appState.triggerTranslation();
                         });
                       },
