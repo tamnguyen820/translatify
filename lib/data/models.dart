@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:aws_polly_api/polly-2016-06-10.dart';
+import 'package:aws_rekognition_api/rekognition-2016-06-27.dart';
 
 class SupportedLanguage {
   final String name;
@@ -44,5 +45,27 @@ class PreviousTTSInfo {
     if (this.text != text) this.text = text;
     if (this.voiceId != voiceId) this.voiceId = voiceId;
     if (this.audioStream != audioStream) this.audioStream = audioStream;
+  }
+}
+
+class FlexTextDetection {
+  final TextDetection _textDetection;
+  String translatedText = '';
+  FlexTextDetection(this._textDetection);
+
+  double? getConfidence() {
+    return _textDetection.confidence;
+  }
+
+  Geometry? getGeometry() {
+    return _textDetection.geometry;
+  }
+
+  TextTypes? getType() {
+    return _textDetection.type;
+  }
+
+  String? getDetectedText() {
+    return _textDetection.detectedText;
   }
 }

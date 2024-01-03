@@ -27,7 +27,6 @@ class AppState extends ChangeNotifier {
     region: dotenv.env['AWS_REGION_IMAGE_DETECTION'] as String,
   );
 
-  // Text main page
   SupportedLanguage languageFrom = englishLanguage;
   SupportedLanguage languageTo = frenchLanguage;
   SupportedLanguage? suggestedLanguage;
@@ -210,31 +209,39 @@ class AppState extends ChangeNotifier {
     );
   }
 
-  Future<List<TextDetection>?> detectTextInImage(Uint8List bytes) async {
-    final textDetectionList = await _imageService.detectText(bytes);
-    // Only concern about lines, not individual words in those lines
-    textDetectionList!.removeWhere((item) => item.type == TextTypes.word);
-    return textDetectionList;
+  // Image page functions
+  List<FlexTextDetection>? flexTextDetections;
+
+  void updateFlexTextDetections(List<FlexTextDetection>? detections) {
+    flexTextDetections = detections;
+    notifyListeners();
   }
 
-  Future<List<TextDetection>> translateImageDetections(
-      List<TextDetection> textDetectionList, String concatSourceText) async {
+  Future<void> detectTextInImage(Uint8List bytes) async {
+    final textDetectionList = await _imageService.detectText(bytes);
+    // Only concern about lines, not individual words in those lines
+    List<FlexTextDetection> flexTextDetectionList = [];
+    String concatSourceText = '';
+    for (var item in textDetectionList!) {
+      if (item.type == TextTypes.word) break;
+      flexTextDetectionList.add(FlexTextDetection(item));
+      concatSourceText += "${item.detectedText}\n";
+    }
+    updateFlexTextDetections(flexTextDetectionList);
+    updateSourceText(concatSourceText);
+  }
+
+  Future<void> translateImageDetections() async {
+    assert(flexTextDetections != null);
     String result = await _translateService.translateText(
       sourceLanguageCode: languageFrom.code,
       targetLanguageCode: languageTo.code,
-      text: concatSourceText,
+      text: sourceText,
     );
     List<String> resultLines = result.split('\n');
-    List<TextDetection> newList = [];
-    // Deep copy is not easy, and detectedText is a final field
-    for (int i = 0; i < textDetectionList.length; i++) {
-      var detectionItem = textDetectionList[i];
-      newList.add(TextDetection(
-        confidence: detectionItem.confidence,
-        detectedText: resultLines[i],
-        geometry: detectionItem.geometry,
-      ));
+    for (int i = 0; i < flexTextDetections!.length; i++) {
+      flexTextDetections?[i].translatedText = resultLines[i];
     }
-    return newList;
+    notifyListeners();
   }
 }

@@ -1,25 +1,34 @@
 import 'dart:math' as math;
 import 'dart:core';
 import 'package:flutter/material.dart';
-import 'package:aws_rekognition_api/rekognition-2016-06-27.dart';
+
+import '/data/models.dart';
 
 class RectangleTextPainter extends CustomPainter {
   ValueNotifier<bool> renderText;
   ValueNotifier<bool> translationLoaded;
-  List<TextDetection>? textDetections;
+  List<FlexTextDetection>? textDetections;
+  SupportedLanguage? languageFrom;
+  SupportedLanguage? languageTo;
+  final borderPaint = Paint()
+    ..color = const Color.fromARGB(199, 41, 41, 129)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2;
   final transparentFill = Paint()
-    ..color = const Color.fromARGB(50, 255, 255, 255)
+    ..color = const Color.fromARGB(100, 255, 255, 255)
     ..style = PaintingStyle.fill;
   final opaqueFill = Paint()
-    ..color = const Color.fromARGB(175, 255, 255, 255)
+    ..color = const Color.fromARGB(200, 255, 255, 255)
     ..style = PaintingStyle.fill;
   final textStyle = const TextStyle(color: Colors.black, fontSize: 16.0);
 
-  RectangleTextPainter(
-      {required this.textDetections,
-      required this.renderText,
-      required this.translationLoaded})
-      : super(repaint: translationLoaded);
+  RectangleTextPainter({
+    required this.textDetections,
+    required this.renderText,
+    required this.translationLoaded,
+    required this.languageFrom,
+    required this.languageTo,
+  }) : super(repaint: translationLoaded);
 
   TextPainter getTextPainterFitInRect(String text, Rect rect) {
     final textPainter = TextPainter(
@@ -43,9 +52,10 @@ class RectangleTextPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (textDetections == null || textDetections!.isEmpty) return;
     for (var textDetection in textDetections!) {
       // Calculate info and draw rect
-      final polygon = textDetection.geometry!.polygon!;
+      final polygon = textDetection.getGeometry()!.polygon!;
 
       final centerX =
           size.width * (polygon.map((p) => p.x!).reduce((a, b) => a + b) / 4);
@@ -79,11 +89,12 @@ class RectangleTextPainter extends CustomPainter {
           ? opaqueFill
           : transparentFill;
       canvas.drawRect(rect, rectPaint);
+      if (!renderText.value) canvas.drawRect(rect, borderPaint);
 
       // Draw text
       if (renderText.value && translationLoaded.value) {
         final textPainter =
-            getTextPainterFitInRect(textDetection.detectedText!, rect);
+            getTextPainterFitInRect(textDetection.translatedText, rect);
         final textOffset = Offset(
           centerX - textPainter.width / 2,
           centerY - textPainter.height / 2,
@@ -97,6 +108,11 @@ class RectangleTextPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    if (oldDelegate is RectangleTextPainter) {
+      // I don't know why this works
+      return (oldDelegate.languageFrom == languageFrom) ||
+          (oldDelegate.languageTo == languageTo);
+    }
     return false;
   }
 }

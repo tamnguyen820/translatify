@@ -134,7 +134,7 @@ class ChooseLanguagePageState extends State<ChooseLanguagePage> {
                               if (widget.parentPage == ParentPage.text) {
                                 appState.triggerTranslation();
                               } else {
-                                // Trigger what?
+                                appState.translateImageDetections();
                               }
                               break;
                             case ChooseLanguagePageType.translateTo:
@@ -142,7 +142,7 @@ class ChooseLanguagePageState extends State<ChooseLanguagePage> {
                               if (widget.parentPage == ParentPage.text) {
                                 appState.triggerTranslation();
                               } else {
-                                // Trigger what?
+                                appState.translateImageDetections();
                               }
                               break;
                           }

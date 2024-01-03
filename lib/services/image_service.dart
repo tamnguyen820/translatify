@@ -51,7 +51,7 @@ class ImageService {
       return reponse.textDetections;
     } catch (e) {
       print(e);
+      rethrow;
     }
-    return null;
   }
 }

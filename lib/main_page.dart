@@ -72,6 +72,7 @@ class _MyHomePageState extends State<MyHomePage> {
           children: [
             Expanded(
               child: FloatingActionButton(
+                heroTag: 'sourceLanguage',
                 mini: true,
                 onPressed: () {
                   navigateToChooseLanguagePage(
@@ -98,8 +99,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         appState.triggerTranslation();
                       }
                       if (selectedIndex == 1) {
-                        // appState.updateSourceText(translatedText);
-                        // appState.triggerTranslation();
+                        appState.translateImageDetections();
                       }
                     }
                   : null,
@@ -108,6 +108,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             Expanded(
               child: FloatingActionButton(
+                heroTag: 'targetLanguage',
                 mini: true,
                 onPressed: () {
                   navigateToChooseLanguagePage(

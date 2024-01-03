@@ -1,4 +1,3 @@
-import 'package:aws_rekognition_api/rekognition-2016-06-27.dart' as rek;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '/app_state.dart';
 import '/widgets/rectangle_text_painter.dart';
+import '../utils/image_resize.dart';
 
 class ImageMainPage extends StatefulWidget {
   const ImageMainPage({super.key});
@@ -18,9 +18,6 @@ class _ImageMainPageState extends State<ImageMainPage> {
   final ImagePicker _picker = ImagePicker();
   dynamic _pickImageError;
   Uint8List? imageInBytes;
-  List<rek.TextDetection>? textDetections;
-  List<rek.TextDetection>? translatedDetections;
-  String concatSourceText = '';
   final _renderText = ValueNotifier<bool>(true);
   final _translationLoaded = ValueNotifier<bool>(false);
 
@@ -35,7 +32,7 @@ class _ImageMainPageState extends State<ImageMainPage> {
       setState(() {
         _pickImageError = null;
         imageInBytes = null;
-        textDetections = null;
+        appState.updateFlexTextDetections(null);
       });
       if (pickedFile == null) return;
 
@@ -46,25 +43,12 @@ class _ImageMainPageState extends State<ImageMainPage> {
         imageInBytes = imageBytes;
       });
 
-      final textDetectionList = await appState.detectTextInImage(imageInBytes!);
+      await appState.detectTextInImage(imageInBytes!);
       setState(() {
-        textDetections = textDetectionList;
         _translationLoaded.value = false;
       });
-
-      String concatText = '';
-      for (var textDetection in textDetectionList!) {
-        concatText += "${textDetection.detectedText}\n";
-      }
+      await appState.translateImageDetections();
       setState(() {
-        concatSourceText = concatText;
-      });
-      final translatedTextList = await appState.translateImageDetections(
-        textDetectionList,
-        concatSourceText,
-      );
-      setState(() {
-        translatedDetections = translatedTextList;
         _translationLoaded.value = true;
       });
       return;
@@ -81,9 +65,7 @@ class _ImageMainPageState extends State<ImageMainPage> {
       });
     }
     imageInBytes = null;
-    textDetections = null;
-    translatedDetections = null;
-    concatSourceText = '';
+    appState.updateFlexTextDetections(null);
     _translationLoaded.value = false;
   }
 
@@ -101,13 +83,24 @@ class _ImageMainPageState extends State<ImageMainPage> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<AppState>();
+    var flexTextDetections = appState.flexTextDetections;
+    var languageFrom = appState.languageFrom;
+    var languageTo = appState.languageTo;
 
     // Limit image/canvas size
     Size contextSize = MediaQuery.of(context).size;
-    double width = contextSize.width;
-    double height = contextSize.height;
+    double targetWidth = contextSize.width;
+    double targetHeight = contextSize.height;
     final padding = MediaQuery.of(context).viewPadding;
-    height = (height - padding.top - padding.bottom - kToolbarHeight) * 0.65;
+    targetHeight =
+        (targetHeight - padding.top - padding.bottom - kToolbarHeight) * 0.65;
+    Size? fittedSize = imageInBytes == null
+        ? null
+        : calculateFittedSize(
+            imageInBytes!,
+            targetWidth,
+            targetHeight,
+          );
 
     return Scaffold(
       body: Center(
@@ -125,10 +118,12 @@ class _ImageMainPageState extends State<ImageMainPage> {
                     children: [
                       Image.memory(
                         imageInBytes!,
-                        width: width,
-                        height: height,
+                        width: fittedSize!.width,
+                        height: fittedSize.height,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Text('This image type is not supported!'),
                       ),
-                      textDetections == null
+                      flexTextDetections == null
                           ? const Padding(
                               padding: EdgeInsets.all(16),
                               child: CircularProgressIndicator(
@@ -139,11 +134,13 @@ class _ImageMainPageState extends State<ImageMainPage> {
                             )
                           : CustomPaint(
                               painter: RectangleTextPainter(
-                                  textDetections:
-                                      translatedDetections ?? textDetections,
-                                  renderText: _renderText,
-                                  translationLoaded: _translationLoaded),
-                              size: Size(width, height),
+                                textDetections: flexTextDetections,
+                                renderText: _renderText,
+                                translationLoaded: _translationLoaded,
+                                languageFrom: languageFrom,
+                                languageTo: languageTo,
+                              ),
+                              size: fittedSize,
                             ),
                     ],
                   ),
@@ -176,7 +173,7 @@ class _ImageMainPageState extends State<ImageMainPage> {
                   onPressed: () async {
                     _onImageButtonPressed(ImageSource.gallery, appState);
                   },
-                  heroTag: 'image0',
+                  heroTag: 'fromGallery',
                   tooltip: 'Pick an image from gallery',
                   child: const Icon(Icons.photo),
                 ),
@@ -185,7 +182,7 @@ class _ImageMainPageState extends State<ImageMainPage> {
                   onPressed: () {
                     _onImageButtonPressed(ImageSource.camera, appState);
                   },
-                  heroTag: 'image2',
+                  heroTag: 'fromCamera',
                   tooltip: 'Take a photo',
                   child: const Icon(Icons.camera_alt),
                 ),
