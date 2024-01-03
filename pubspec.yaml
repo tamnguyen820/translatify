@@ -20,9 +20,11 @@ dependencies:
   flutter_dotenv: ^5.1.0
   translator: ^0.1.7
   audioplayers: ^5.2.1
+  image_picker: ^1.0.5
+  image: ^4.1.3
   aws_translate_api: ^2.0.0
   aws_polly_api: ^2.0.0
-  image_picker: ^1.0.5
+  aws_rekognition_api: ^2.0.0
 
 dev_dependencies:
   flutter_test:

@@ -54,7 +54,6 @@ class TranslateService {
         targetLanguageCode: targetLanguageCode,
         text: text,
       );
-      print(response.sourceLanguageCode);
       return response.translatedText;
     } catch (e) {
       print(e);

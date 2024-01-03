@@ -1,25 +1,32 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:aws_polly_api/polly-2016-06-10.dart';
-import 'package:translatify/services/tts_service.dart';
+import 'package:aws_rekognition_api/rekognition-2016-06-27.dart';
 
 import '/data/models.dart';
 import '/data/constants.dart';
 import '/services/translate_service.dart';
+import '/services/tts_service.dart';
+import '/services/image_service.dart';
 
 class AppState extends ChangeNotifier {
-  final translateService = TranslateService(
+  final _translateService = TranslateService(
     accessKey: dotenv.env['AWS_ACCESS_KEY'] as String,
     secretKey: dotenv.env['AWS_SECRET_KEY'] as String,
     region: dotenv.env['AWS_REGION'] as String,
   );
-  final ttsService = TTSService(
+  final _ttsService = TTSService(
     accessKey: dotenv.env['AWS_ACCESS_KEY'] as String,
     secretKey: dotenv.env['AWS_SECRET_KEY'] as String,
     region: dotenv.env['AWS_REGION'] as String,
+  );
+  final _imageService = ImageService(
+    accessKey: dotenv.env['AWS_ACCESS_KEY'] as String,
+    secretKey: dotenv.env['AWS_SECRET_KEY'] as String,
+    region: dotenv.env['AWS_REGION_IMAGE_DETECTION'] as String,
   );
 
-  // Text main page
   SupportedLanguage languageFrom = englishLanguage;
   SupportedLanguage languageTo = frenchLanguage;
   SupportedLanguage? suggestedLanguage;
@@ -117,7 +124,7 @@ class AppState extends ChangeNotifier {
     }
     updateTranslatedText(tempTranslatedText);
 
-    String result = await translateService.translateText(
+    String result = await _translateService.translateText(
       sourceLanguageCode: languageFrom.code,
       targetLanguageCode: languageTo.code,
       text: sourceText,
@@ -125,7 +132,7 @@ class AppState extends ChangeNotifier {
     updateTranslatedText(result);
     notifyListeners();
     try {
-      SupportedLanguage suggestion = await translateService.freeDetectLanguage(
+      SupportedLanguage suggestion = await _translateService.freeDetectLanguage(
         targetLanguageCode: languageTo.code,
         text: sourceText,
       );
@@ -154,7 +161,7 @@ class AppState extends ChangeNotifier {
 
   Future<VoiceId?> getVoiceId(SupportedLanguage language) async {
     if (language.ttsCode != null) {
-      return await ttsService.getVoiceId(language.ttsCode as LanguageCode);
+      return await _ttsService.getVoiceId(language.ttsCode as LanguageCode);
     }
     return null;
   }
@@ -168,11 +175,11 @@ class AppState extends ChangeNotifier {
 
     if (prevTTSInfo != null &&
         prevTTSInfo.sameInfo(languageFrom, sourceText, ttsVoiceId)) {
-      ttsService.playSpeech(prevTTSInfo.audioStream);
+      _ttsService.playSpeech(prevTTSInfo.audioStream);
       return;
     }
 
-    final audioStream = await ttsService.createSpeech(sourceText, ttsVoiceId);
+    final audioStream = await _ttsService.createSpeech(sourceText, ttsVoiceId);
     if (prevTTSInfo != null) {
       prevTTSInfo.updateInfo(languageFrom, sourceText, ttsVoiceId, audioStream);
     } else {
@@ -183,7 +190,7 @@ class AppState extends ChangeNotifier {
         audioStream: audioStream,
       );
     }
-    ttsService.playSpeech(audioStream);
+    _ttsService.playSpeech(audioStream);
   }
 
   void playSourceTextSpeech() async {
@@ -200,5 +207,41 @@ class AppState extends ChangeNotifier {
       prevTTSInfo: prevTTSToInfo,
       sourceText: translatedText,
     );
+  }
+
+  // Image page functions
+  List<FlexTextDetection>? flexTextDetections;
+
+  void updateFlexTextDetections(List<FlexTextDetection>? detections) {
+    flexTextDetections = detections;
+    notifyListeners();
+  }
+
+  Future<void> detectTextInImage(Uint8List bytes) async {
+    final textDetectionList = await _imageService.detectText(bytes);
+    // Only concern about lines, not individual words in those lines
+    List<FlexTextDetection> flexTextDetectionList = [];
+    String concatSourceText = '';
+    for (var item in textDetectionList!) {
+      if (item.type == TextTypes.word) break;
+      flexTextDetectionList.add(FlexTextDetection(item));
+      concatSourceText += "${item.detectedText}\n";
+    }
+    updateFlexTextDetections(flexTextDetectionList);
+    updateSourceText(concatSourceText);
+  }
+
+  Future<void> translateImageDetections() async {
+    assert(flexTextDetections != null);
+    String result = await _translateService.translateText(
+      sourceLanguageCode: languageFrom.code,
+      targetLanguageCode: languageTo.code,
+      text: sourceText,
+    );
+    List<String> resultLines = result.split('\n');
+    for (int i = 0; i < flexTextDetections!.length; i++) {
+      flexTextDetections?[i].translatedText = resultLines[i];
+    }
+    notifyListeners();
   }
 }
