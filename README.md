@@ -1,6 +1,6 @@
-# translatify
+# Translatify
 
-A mobile translation app
+A mobile translation app made with Flutter
 
 ## Demo
 
