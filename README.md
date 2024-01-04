@@ -39,3 +39,22 @@ flutter pub get
 
 # Run the app
 flutter run
+```
+
+## Build
+```bash
+
+# Change directory
+cd translatify
+
+# Get dependencies
+flutter pub get
+
+flutter clean
+flutter build apk
+
+# Now, connect your Android device with a USB cable
+
+# Install
+flutter install
+```
